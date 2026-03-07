@@ -1,0 +1,15 @@
+torch
+torchvision
+ultralytics
+opencv-python
+numpy
+pandas
+matplotlib
+Flask
+streamlit
+scikit-learn
+python-Levenshtein
+jupyter
+fastapi
+uvicorn
+python-multipart

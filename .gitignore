@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+ENV/
+.env
+
+# Node
+node_modules/
+dist/
+build/
+.npm/
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+yolo_dataset/
+runs/
+models/char_cnn.pth
+models/yolo_plate.pt
+debug_*.jpg
+Indian_Number_Plates/
+State-wise_OLX/
+Annotations/
+number_plate_annos_ocr/
+number_plate_images_ocr/
+google_images/
+video_images/
+data/characters/
