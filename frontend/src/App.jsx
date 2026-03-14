@@ -2,6 +2,8 @@ import { useState } from 'react';
 import Dropzone from './components/Dropzone';
 import './App.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -27,7 +29,7 @@ function App() {
     formData.append('file', selectedFile);
 
     try {
-      const response = await fetch('http://localhost:8000/api/verify', {
+      const response = await fetch(`${API_BASE_URL}/api/verify`, {
         method: 'POST',
         body: formData,
       });

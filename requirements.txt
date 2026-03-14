@@ -13,3 +13,4 @@ jupyter
 fastapi
 uvicorn
 python-multipart
+httpx

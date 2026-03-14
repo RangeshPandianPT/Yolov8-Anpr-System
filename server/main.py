@@ -3,15 +3,28 @@ from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 import os
 import sys
+from datetime import datetime, timezone
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.pipeline import ANPRPipeline
 
 app = FastAPI(title="ANPR API", description="API for the Automatic Number Plate Recognition system")
 
+APP_VERSION = "0.2.0"
+STARTED_AT = datetime.now(timezone.utc).isoformat()
+
+
+def _parse_cors_origins() -> list[str]:
+    raw_origins = os.getenv("ANPR_CORS_ORIGINS", "http://localhost:5173")
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return origins or ["http://localhost:5173"]
+
+
+allowed_origins = _parse_cors_origins()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -19,16 +32,43 @@ app.add_middleware(
 
 print("Initializing pipeline...")
 try:
-    # Load pipeline
     pipeline = ANPRPipeline()
+    pipeline_init_error = None
     print("Pipeline initialized successfully.")
 except Exception as e:
     print(f"Error initializing pipeline: {e}")
     pipeline = None
+    pipeline_init_error = str(e)
 
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "ANPR API is running"}
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "service": "anpr-api",
+        "version": APP_VERSION,
+        "started_at": STARTED_AT,
+    }
+
+
+@app.get("/ready")
+def readiness_check():
+    if not pipeline:
+        return {
+            "status": "not_ready",
+            "pipeline_initialized": False,
+            "error": pipeline_init_error,
+        }
+    return {"status": "ready", "pipeline_initialized": True}
+
+
+@app.get("/version")
+def version_info():
+    return {"version": APP_VERSION}
 
 @app.post("/api/verify")
 async def verify_plate(file: UploadFile = File(...)):
@@ -44,13 +84,10 @@ async def verify_plate(file: UploadFile = File(...)):
             tmp_file.write(content)
             tmp_path = tmp_file.name
             
-        # Call the actual ML pipeline
         result = pipeline.process_image(tmp_path)
         
-        # Cleanup
         os.unlink(tmp_path)
         
-        # Even if pipeline returns status error (e.g. no plate detected), we return it properly
         return result
         
     except Exception as e:
