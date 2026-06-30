@@ -1,5 +1,6 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import tempfile
 import os
 import sys
@@ -94,3 +95,58 @@ async def verify_plate(file: UploadFile = File(...)):
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+class PlateIn(BaseModel):
+    plate_number: str
+    owner_name: str
+
+@app.get("/api/plates")
+def get_plates():
+    if not pipeline:
+        raise HTTPException(status_code=500, detail="Pipeline not initialized")
+    return pipeline.verifier.get_all_plates()
+
+@app.post("/api/plates")
+def add_plate(plate: PlateIn):
+    if not pipeline:
+        raise HTTPException(status_code=500, detail="Pipeline not initialized")
+    success = pipeline.verifier.add_plate(plate.plate_number, plate.owner_name)
+    if not success:
+        raise HTTPException(status_code=400, detail="Plate already exists or invalid")
+    return {"message": "Plate added successfully"}
+
+@app.delete("/api/plates/{plate_id}")
+def delete_plate(plate_id: int):
+    if not pipeline:
+        raise HTTPException(status_code=500, detail="Pipeline not initialized")
+    success = pipeline.verifier.delete_plate(plate_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Plate not found")
+    return {"message": "Plate deleted successfully"}
+
+@app.get("/api/logs")
+def get_logs():
+    if not pipeline:
+        raise HTTPException(status_code=500, detail="Pipeline not initialized")
+    return pipeline.verifier.get_access_logs(limit=100)
+
+@app.post("/api/verify/video")
+async def verify_video(file: UploadFile = File(...)):
+    if not pipeline:
+        raise HTTPException(status_code=500, detail="Pipeline not initialized")
+    if not file.content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="File must be a video")
+    
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
+            content = await file.read()
+            tmp_file.write(content)
+            tmp_path = tmp_file.name
+            
+        result = pipeline.process_video(tmp_path)
+        os.unlink(tmp_path)
+        return result
+    except Exception as e:
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
