@@ -1,0 +1,22 @@
+FROM node:20-slim as build
+
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package*.json ./
+RUN npm install
+
+# Copy source code
+COPY frontend/ .
+
+# Build the app
+RUN npm run build
+
+# Serve using a lightweight static server (e.g. serve)
+FROM node:20-slim
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=build /app/dist ./dist
+
+# Start server
+CMD ["serve", "-s", "dist", "-l", "5173"]
