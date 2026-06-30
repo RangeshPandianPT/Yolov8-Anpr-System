@@ -14,17 +14,23 @@ class PlateDetector:
         else:
             self.model = None
 
-    def detect_plate(self, image_path):
+    def detect_plate(self, image_path=None, image_array=None):
         """
         Detect and crop the license plate from an image.
         Returns a dict with status and metadata.
         """
-        img = cv2.imread(image_path)
+        if image_array is not None:
+            img = image_array
+        elif image_path is not None:
+            img = cv2.imread(image_path)
+        else:
+            return {"status": "error", "reason": "invalid_input", "message": "No input provided"}
+            
         if img is None:
             return {
                 "status": "error",
                 "reason": "invalid_image",
-                "message": "Unable to read the image file.",
+                "message": "Unable to read the image file or array.",
             }
             
         if self.model is None:

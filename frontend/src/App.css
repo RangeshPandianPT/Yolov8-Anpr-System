@@ -1,4 +1,29 @@
 /* App.css */
+.tabs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+.tabs button {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.tabs button.active {
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+}
+.tabs button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .preview-container {
   display: flex;
   flex-direction: column;
