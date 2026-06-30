@@ -14,14 +14,18 @@ class ANPRPipeline:
         self.verifier = PlateVerifier()
         print("Initialization Complete.")
 
-    def process_image(self, image_path):
+    def process_image(self, image_path=None, image_array=None):
         """
         Run the full ANPR pipeline on a single image.
         """
         start_time = time.time()
 
-        print(f"Detecting plate in {image_path}...")
-        detection_result = self.detector.detect_plate(image_path)
+        if image_path:
+            print(f"Detecting plate in {image_path}...")
+        else:
+            print("Detecting plate in image array...")
+            
+        detection_result = self.detector.detect_plate(image_path=image_path, image_array=image_array)
 
         if detection_result.get("status") != "success":
             processing_time = time.time() - start_time
@@ -77,6 +81,40 @@ class ANPRPipeline:
         }
 
         return result
+
+    def process_video(self, video_path, process_every_n_frames=15):
+        """
+        Process a video file to detect plates. Returns unique authorized and unauthorized plates found.
+        """
+        start_time = time.time()
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            return {"status": "error", "message": "Failed to open video."}
+
+        plates_found = {}
+        frame_idx = 0
+        
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+                
+            if frame_idx % process_every_n_frames == 0:
+                result = self.process_image(image_array=frame)
+                if result.get("status") == "success":
+                    plate_txt = result.get("predicted_plate")
+                    if plate_txt and plate_txt not in plates_found:
+                        plates_found[plate_txt] = result
+                        
+            frame_idx += 1
+            
+        cap.release()
+        
+        return {
+            "status": "success",
+            "processing_time_sec": round(time.time() - start_time, 3),
+            "unique_plates": list(plates_found.values())
+        }
 
 if __name__ == "__main__":
     pass
